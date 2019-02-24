@@ -1,0 +1,72 @@
+1、爬虫目的：
+    1）掌握使用scrapy框架搭建爬虫项目
+    2）掌握爬取ajax数据包，并提取有用信息
+    3）掌握图片信息保存到数据库操作以及下载图片到本地
+    4）掌握请求异常及返回异常处理，更换代理防止反爬虫
+
+2、scrapy简介
+    Usage:
+        scrapy <command> [options] [args]
+    Available commands:
+        bench         Run quick benchmark test
+        check         Check spider contracts
+        crawl         Run a spider
+        edit          Edit spider
+        fetch         Fetch a URL using the Scrapy downloader
+        genspider     Generate new spider using pre-defined templates
+        list          List available spiders
+        parse         Parse URL (using its spider) and print the results
+        runspider     Run a self-contained spider (without creating a project)
+        settings      Get settings values
+        shell         Interactive scraping console
+        startproject  Create new project
+        version       Print Scrapy version
+        view          Open URL in browser, as seen by Scrapy
+
+    1）创建工程：scrapy startproject cat_pic_spider
+    2）创建爬虫项目：scrapy genspider baidupic baidu.com
+    3）查看所有爬虫：scrapy list
+    4）运行爬虫：scrapy crawl cat (--nolog)
+
+    items.py文件：定义字段
+    spiders/baidupic.py：爬虫文件，定义爬取网址，对返回数据进行处理，提取有用信息
+    pipelines.py：管道文件，对提取到的信息进行后续处理，如：保存到本地以及数据库
+    middlewares.py：中间件，所有的请求及响应都经过中间件，所以可以通过中间件添加请求头和代理。
+        也可以对响应状态进行判断，不满足则不返回响应或重新发起请求。
+        还可以处理各种异常，根据异常进行下一步操作。
+    settings.py：配置文件，如开启管道文件和中间件，其中数字为优先顺序，请求优先执行小的，响应则相反
+        DOWNLOADER_MIDDLEWARES = {
+           'cat_pic_spider.middlewares.ProxyMiddleware': 344,
+           'cat_pic_spider.middlewares.UserAgentMiddleware': 343,
+           'cat_pic_spider.middlewares.DownloadMiddleware': 345,
+        }
+        ITEM_PIPELINES = {
+           # 'cat_pic_spider.pipelines.MysqlPipeline': 299,
+           'cat_pic_spider.pipelines.MysqlPipelineTwo': 300,
+           # 'cat_pic_spider.pipelines.PicPipeline': 301,  # ImagePipeline的自定义实现类
+        }
+
+3、爬虫介绍
+    1）爬取任意百度图片，通过修改settings.py里的pic_name
+        如：pic_name = {'name': 'cat', 'keyWord': '猫'}
+        注：name不能重复
+    2）可以下载图片到本地，也可以保存图片信息到数据库
+        下载到本地使用scrapy提供的ImagesPipelines类，编写自己的类PicPipeline
+        保存到数据库有同步和异步两种方式，如：MysqlPipeline（异步），MysqlPipelineTwo（同步）
+    3）百度图片返回使用ajax，所以需要对返回值进行反序列化。并且其图片地址进行了加密处理，
+        所以还需解密，解密代码在decode_url.py文件
+    4）在下载图片时，有本地ip不可用，需要添加代理，所以需要建立代理池，当代理不可用时更换代理。
+
+4、问题及解决
+    1）代理问题：建立代理池，根据响应或异常更换代理
+    2）数据入库问题：在使用数据库连接池进行数据入库操作时，因数据入库速度交慢，因此异步执行可能
+        会出现数据重复插入，解决方案就是将传递过来的数据先进行拷贝，然后再对其进行操作。
+    3）图片下载问题：因多数代理不可用，而且图片网站有反爬虫措施，所以将图片信息先保存到数据库，
+        再根据图片网站分类进行下载。
+
+
+
+
+
+
+
